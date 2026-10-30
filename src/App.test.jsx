@@ -174,3 +174,79 @@ describe('shopping bag', () => {
     expect(screen.getByRole('button', { name: 'Open shopping bag, 0 items' })).toBeTruthy();
   });
 });
+
+describe('wishlist', () => {
+  it('opens an empty wishlist and returns to browsing', async () => {
+    const user = renderShop();
+    await user.click(screen.getByRole('button', { name: 'Open wishlist, 0 items' }));
+    const dialog = screen.getByRole('dialog', { name: 'Your wishlist' });
+
+    expect(within(dialog).getByText('Tap a heart on any product to save it here.')).toBeTruthy();
+    expect(within(dialog).queryAllByRole('listitem')).toHaveLength(0);
+
+    await user.click(within(dialog).getByRole('button', { name: 'Keep exploring' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('saves a product and reflects the accessible name, pressed state, header count, and dialog contents', async () => {
+    const user = renderShop();
+    const saveButton = screen.getByRole('button', { name: 'Save Sunday cotton overshirt to wishlist' });
+
+    await user.click(saveButton);
+
+    const savedButton = screen.getByRole('button', { name: 'Remove Sunday cotton overshirt from wishlist' });
+    expect(savedButton.getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Open wishlist, 1 items' })).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Open wishlist, 1 items' }));
+    const dialog = within(screen.getByRole('dialog', { name: 'Your wishlist' }));
+    expect(dialog.getAllByRole('listitem')).toHaveLength(1);
+    expect(dialog.getByRole('heading', { name: 'Sunday cotton overshirt' })).toBeTruthy();
+  });
+
+  it('removes a product from the wishlist dialog and updates count, heart state, and empty state', async () => {
+    const user = renderShop();
+    await user.click(screen.getByRole('button', { name: 'Save Sunday cotton overshirt to wishlist' }));
+    await user.click(screen.getByRole('button', { name: 'Open wishlist, 1 items' }));
+    const dialog = within(screen.getByRole('dialog', { name: 'Your wishlist' }));
+
+    await user.click(dialog.getByRole('button', { name: 'Remove', exact: true }));
+
+    expect(dialog.queryAllByRole('listitem')).toHaveLength(0);
+    expect(dialog.getByText('Tap a heart on any product to save it here.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Open wishlist, 0 items' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Save Sunday cotton overshirt to wishlist' }).getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('adds a saved product to the bag from the wishlist dialog with correct quantity and subtotal, while it stays saved', async () => {
+    const user = renderShop();
+    await user.click(screen.getByRole('button', { name: 'Save Terra ceramic vase to wishlist' }));
+    await user.click(screen.getByRole('button', { name: 'Open wishlist, 1 items' }));
+    const wishlistDialog = within(screen.getByRole('dialog', { name: 'Your wishlist' }));
+
+    await user.click(wishlistDialog.getByRole('button', { name: 'Add to bag +' }));
+
+    expect(screen.getByRole('button', { name: 'Open shopping bag, 1 items' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Remove Terra ceramic vase from wishlist' }).getAttribute('aria-pressed')).toBe('true');
+
+    await user.click(wishlistDialog.getByRole('button', { name: 'Close panel' }));
+    await user.click(screen.getByRole('button', { name: 'Open shopping bag, 1 items' }));
+    const cartDialog = within(screen.getByRole('dialog', { name: 'Your shopping bag' }));
+    expect(cartDialog.getByLabelText('Terra ceramic vase quantity').textContent).toBe('1');
+    expect(cartDialog.getByText('Demo subtotal').nextElementSibling.textContent).toBe('$32.00');
+  });
+
+  it('toggles a product off the wishlist from its card without changing the bag', async () => {
+    const user = renderShop();
+    await user.click(screen.getByRole('button', { name: 'Add Dewdrop botanical serum to bag' }));
+    const saveButton = screen.getByRole('button', { name: 'Save Dewdrop botanical serum to wishlist' });
+    await user.click(saveButton);
+
+    const savedButton = screen.getByRole('button', { name: 'Remove Dewdrop botanical serum from wishlist' });
+    await user.click(savedButton);
+
+    expect(screen.getByRole('button', { name: 'Save Dewdrop botanical serum to wishlist' }).getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByRole('button', { name: 'Open wishlist, 0 items' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Open shopping bag, 1 items' })).toBeTruthy();
+  });
+});
