@@ -1,5 +1,4 @@
-# liverpool
-
+# Acme Retail Site
 A responsive React + JavaScript retail homepage built with Vite. All products,
 prices, and shopping interactions are fictional. This is not an official Liverpool
 store and does not offer authentication, checkout, payments, or order processing.
